@@ -1,6 +1,6 @@
 const axios = require('axios');
 const bip39 = require('bip39');
-const { Keypair } = require('@solana/web3.js');
+const { DirectSecp256k1Wallet, Registry, AminoTypes } = require('@cosmjs/proto-signing');
 const readlineSync = require('readline-sync');
 const fs = require('fs');
 const colors = require('colors');
@@ -9,20 +9,33 @@ const colors = require('colors');
 const API_BASE_URL = 'https://api.buenavista.wardenprotocol.org'; // Replace with the actual base URL
 const SEND_TOKEN_ENDPOINT = '/wardenprotocol/warden/intent/send'; // Replace with actual endpoint
 
-// Function to create a keypair from a seed phrase
-function getAddressFromSeedPhrase(seedPhrase) {
-  const seed = bip39.mnemonicToSeedSync(seedPhrase);
-  // Assuming the address is derived from the first 32 bytes of the seed for simplicity
-  return seed.toString('hex').slice(0, 64); // Replace with actual address derivation method if different
+/**
+ * Create a wallet from a seed phrase
+ * @param {string} seedPhrase - The seed phrase
+ * @returns {object} - Wallet with address and sign method
+ */
+async function getWalletFromSeedPhrase(seedPhrase) {
+  const isValidMnemonic = bip39.validateMnemonic(seedPhrase);
+  if (!isValidMnemonic) {
+    throw new Error('Invalid seed phrase');
+  }
+
+  const wallet = await DirectSecp256k1Wallet.fromMnemonic(seedPhrase);
+  return wallet;
 }
 
-// Function to send tokens
+/**
+ * Send tokens
+ * @param {string} fromAddress - The sender's address
+ * @param {string} toAddress - The recipient's address
+ * @param {number} amount - The amount of tokens to send
+ */
 async function sendTokens(fromAddress, toAddress, amount) {
   const url = `${API_BASE_URL}${SEND_TOKEN_ENDPOINT}`;
   const payload = {
     from: fromAddress,
     to: toAddress,
-    amount: amount
+    amount: amount.toFixed(2) // Ensure amount is a valid number format
   };
 
   try {
@@ -64,10 +77,16 @@ async function sendTokens(fromAddress, toAddress, amount) {
   // Send 50 transactions
   for (let i = 0; i < 50; i++) {
     for (const seedPhrase of seedPhrases) {
-      const { publicKey } = getKeypairFromSeedPhrase(seedPhrase);
-      console.log(colors.yellow(`Sending WARD from address: ${publicKey}`));
-      await sendTokens(publicKey, targetAddress, amountToSend);
-      await new Promise(resolve => setTimeout(resolve, delayBetweenTx)); // Delay between transactions
+      try {
+        const wallet = await getWalletFromSeedPhrase(seedPhrase);
+        const accounts = await wallet.getAccounts();
+        const { address } = accounts[0];
+        console.log(colors.yellow(`Sending WARD from address: ${address}`));
+        await sendTokens(address, targetAddress, amountToSend);
+        await new Promise(resolve => setTimeout(resolve, delayBetweenTx)); // Delay between transactions
+      } catch (error) {
+        console.error(colors.red(`Error processing seed phrase: ${error.message}`));
+      }
     }
   }
 })();
