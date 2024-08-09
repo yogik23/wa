@@ -68,12 +68,12 @@ async function generateRandomAddresses(count) {
   const randomAddresses = await generateRandomAddresses(addressCount);
 
   const amountToSend = parseFloat(readlineSync.question(
-    'Enter the amount of WARD to send (default is 1 WARD): '
-  )) || 1;
+    'Enter the amount of WARD to send (default is 0.001 WARD): '
+  )) || 0.001;
 
   const delayBetweenTx = parseInt(readlineSync.question(
-    `Enter the delay between transactions in milliseconds (default is 1000ms): `
-  ), 10) || 1000;
+    `Enter the delay between transactions in milliseconds (default is 5000ms): `
+  ), 50) || 5000;
 
   if (isNaN(delayBetweenTx) || delayBetweenTx < 0) {
     console.error(colors.red('Invalid delay specified'));
