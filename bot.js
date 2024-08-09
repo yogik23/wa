@@ -1,6 +1,6 @@
 const axios = require('axios');
 const bip39 = require('bip39');
-const { DirectSecp256k1Wallet, Registry, AminoTypes } = require('@cosmjs/proto-signing');
+const { DirectSecp256k1Wallet } = require('@cosmjs/proto-signing');
 const readlineSync = require('readline-sync');
 const fs = require('fs');
 const colors = require('colors');
@@ -15,8 +15,7 @@ const SEND_TOKEN_ENDPOINT = '/wardenprotocol/warden/intent/send'; // Replace wit
  * @returns {object} - Wallet with address and sign method
  */
 async function getWalletFromSeedPhrase(seedPhrase) {
-  const isValidMnemonic = bip39.validateMnemonic(seedPhrase);
-  if (!isValidMnemonic) {
+  if (!bip39.validateMnemonic(seedPhrase)) {
     throw new Error('Invalid seed phrase');
   }
 
