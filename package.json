@@ -1,19 +1,18 @@
 {
-  "name": "warden-bot",
+  "name": "warden",
   "version": "1.0.0",
-  "description": "A bot to send transactions using Warden Protocol with addresses derived from seed phrases.",
-  "main": "bot.js",
+  "description": "A script to send WARD tokens using Warden Protocol and Cosmos SDK",
+  "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "axios": "^1.4.0",
     "bip39": "^3.0.4",
-    "@solana/web3.js": "^1.82.0",
+    "@cosmjs/proto-signing": "^0.40.0",
     "readline-sync": "^1.4.10",
-    "fs-extra": "^11.2.0",
     "colors": "^1.4.0"
   },
-  "author": "",
+  "author": "Your Name",
   "license": "MIT"
 }
