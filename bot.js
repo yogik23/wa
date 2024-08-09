@@ -14,7 +14,6 @@ function getAddressFromSeedPhrase(seedPhrase) {
   const seed = bip39.mnemonicToSeedSync(seedPhrase);
   // Assuming the address is derived from the first 32 bytes of the seed for simplicity
   return seed.toString('hex').slice(0, 64); // Replace with actual address derivation method if different
-  };
 }
 
 // Function to send tokens
