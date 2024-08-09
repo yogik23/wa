@@ -50,10 +50,10 @@ async function sendTokens(fromKeypair, toAddress, amount) {
 
   // Get target address and amount to send
   const targetAddress = readlineSync.question('Enter the target address to send WARD to: ').trim();
-  const amountToSend = parseFloat(readlineSync.question('Enter the amount of WARD to send in each transaction (default is 1 WARD): ').trim()) || 1;
+  const amountToSend = parseFloat(readlineSync.question('Enter the amount of WARD to send in each transaction (default is 0.001 WARD): ').trim()) || 1;
 
   // Get delay between transactions
-  const delayBetweenTx = parseInt(readlineSync.question('Enter the delay between transactions in milliseconds (default is 1000ms): ').trim()) || 1000;
+  const delayBetweenTx = parseInt(readlineSync.question('Enter the delay between transactions in milliseconds (default is 3000ms): ').trim()) || 3000;
 
   if (isNaN(delayBetweenTx) || delayBetweenTx < 0) {
     console.error(colors.red('Invalid delay specified'));
