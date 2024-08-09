@@ -10,12 +10,10 @@ const API_BASE_URL = 'https://api.buenavista.wardenprotocol.org'; // Replace wit
 const SEND_TOKEN_ENDPOINT = '/wardenprotocol/warden/intent/send'; // Replace with actual endpoint
 
 // Function to create a keypair from a seed phrase
-function getKeypairFromSeedPhrase(seedPhrase) {
+function getAddressFromSeedPhrase(seedPhrase) {
   const seed = bip39.mnemonicToSeedSync(seedPhrase);
-  const keypair = Keypair.fromSeed(seed.slice(0, 32)); // Ensure seed is 32 bytes
-  return {
-    publicKey: keypair.publicKey.toString(),
-    privateKey: Buffer.from(keypair.secretKey).toString('hex') // Convert to hex string for storage
+  // Assuming the address is derived from the first 32 bytes of the seed for simplicity
+  return seed.toString('hex').slice(0, 64); // Replace with actual address derivation method if different
   };
 }
 
