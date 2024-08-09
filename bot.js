@@ -1,25 +1,29 @@
 const axios = require('axios');
+const bip39 = require('bip39');
+const { Keypair } = require('@solana/web3.js');
 const readlineSync = require('readline-sync');
 const fs = require('fs');
 const colors = require('colors');
-const bip39 = require('bip39');
-const { Keypair, Connection, clusterApiUrl, SystemProgram, Transaction } = require('@solana/web3.js');
 
 // Define API endpoints and base URL
-const API_BASE_URL = 'https://api.buenavista.wardenprotocol.org'; // Replace with actual base URL
+const API_BASE_URL = 'https://api.buenavista.wardenprotocol.org'; // Replace with the actual base URL
 const SEND_TOKEN_ENDPOINT = '/wardenprotocol/warden/intent/send'; // Replace with actual endpoint
 
-// Function to create keypair from seed phrase
-function getKeypairFromSeed(seedPhrase) {
+// Function to create a keypair from a seed phrase
+function getKeypairFromSeedPhrase(seedPhrase) {
   const seed = bip39.mnemonicToSeedSync(seedPhrase);
-  return Keypair.fromSeed(seed.slice(0, 32)); // Solana keypair uses 32-byte seeds
+  const keypair = Keypair.fromSeed(seed.slice(0, 32)); // Ensure seed is 32 bytes
+  return {
+    publicKey: keypair.publicKey.toString(),
+    privateKey: Buffer.from(keypair.secretKey).toString('hex') // Convert to hex string for storage
+  };
 }
 
 // Function to send tokens
-async function sendTokens(fromKeypair, toAddress, amount) {
+async function sendTokens(fromAddress, toAddress, amount) {
   const url = `${API_BASE_URL}${SEND_TOKEN_ENDPOINT}`;
   const payload = {
-    from: fromKeypair.publicKey.toString(),
+    from: fromAddress,
     to: toAddress,
     amount: amount
   };
@@ -50,7 +54,7 @@ async function sendTokens(fromKeypair, toAddress, amount) {
 
   // Get target address and amount to send
   const targetAddress = readlineSync.question('Enter the target address to send WARD to: ').trim();
-  const amountToSend = parseFloat(readlineSync.question('Enter the amount of WARD to send in each transaction (default is 0.001 WARD): ').trim()) || 1;
+  const amountToSend = parseFloat(readlineSync.question('Enter the amount of WARD to send in each transaction (default is 0.001 WARD): ').trim()) || 0.001;
 
   // Get delay between transactions
   const delayBetweenTx = parseInt(readlineSync.question('Enter the delay between transactions in milliseconds (default is 3000ms): ').trim()) || 3000;
@@ -63,9 +67,9 @@ async function sendTokens(fromKeypair, toAddress, amount) {
   // Send 50 transactions
   for (let i = 0; i < 50; i++) {
     for (const seedPhrase of seedPhrases) {
-      const fromKeypair = getKeypairFromSeed(seedPhrase);
-      console.log(colors.yellow(`Sending WARD from keypair with public key: ${fromKeypair.publicKey.toString()}`));
-      await sendTokens(fromKeypair, targetAddress, amountToSend);
+      const { publicKey } = getKeypairFromSeedPhrase(seedPhrase);
+      console.log(colors.yellow(`Sending WARD from address: ${publicKey}`));
+      await sendTokens(publicKey, targetAddress, amountToSend);
       await new Promise(resolve => setTimeout(resolve, delayBetweenTx)); // Delay between transactions
     }
   }
