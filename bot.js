@@ -1,91 +1,85 @@
 const axios = require('axios');
 const bip39 = require('bip39');
-const { DirectSecp256k1Wallet } = require('@cosmjs/proto-signing');
-const readlineSync = require('readline-sync');
-const fs = require('fs');
-const colors = require('colors');
+const crypto = require('crypto');
 
-// Define API endpoints and base URL
-const API_BASE_URL = 'https://api.buenavista.wardenprotocol.org'; // Replace with the actual base URL
-const SEND_TOKEN_ENDPOINT = '/wardenprotocol/warden/intent/send'; // Replace with actual endpoint
-
-/**
- * Create a wallet from a seed phrase
- * @param {string} seedPhrase - The seed phrase
- * @returns {object} - Wallet with address and sign method
- */
-async function getWalletFromSeedPhrase(seedPhrase) {
-  if (!bip39.validateMnemonic(seedPhrase)) {
-    throw new Error('Invalid seed phrase');
+// Placeholder functions for Warden Protocol API
+const WardenAPI = {
+  createTransaction: async (sourceAddress, recipientAddress, amount) => {
+    // Replace with actual API call to create a transaction
+    return {
+      source: sourceAddress,
+      recipient: recipientAddress,
+      amount: amount
+    };
+  },
+  signTransaction: (transaction, privateKey) => {
+    // Replace with actual transaction signing
+    const sign = crypto.createSign('SHA256');
+    sign.update(JSON.stringify(transaction));
+    sign.end();
+    const signature = sign.sign(privateKey, 'hex');
+    transaction.signature = signature;
+    return transaction;
+  },
+  broadcastTransaction: async (signedTransaction) => {
+    // Replace with actual API call to broadcast a transaction
+    const response = await axios.post('https://api.wardenprotocol.com/broadcast', signedTransaction);
+    return response;
   }
+};
 
-  const wallet = await DirectSecp256k1Wallet.fromMnemonic(seedPhrase);
-  return wallet;
+function getAddressFromSeedPhrase(seedPhrase, derivationPath = "m/44'/0'/0'/0/0") {
+  // Convert seed phrase to seed
+  const seed = bip39.mnemonicToSeedSync(seedPhrase);
+  // Derive address from seed (Placeholder implementation)
+  const address = deriveAddressFromSeed(seed, derivationPath);
+  return address;
 }
 
-/**
- * Send tokens
- * @param {string} fromAddress - The sender's address
- * @param {string} toAddress - The recipient's address
- * @param {number} amount - The amount of tokens to send
- */
-async function sendTokens(fromAddress, toAddress, amount) {
-  const url = `${API_BASE_URL}${SEND_TOKEN_ENDPOINT}`;
-  const payload = {
-    from: fromAddress,
-    to: toAddress,
-    amount: amount.toFixed(2) // Ensure amount is a valid number format
-  };
-
-  try {
-    const response = await axios.post(url, payload);
-    console.log(colors.green(`Successfully sent ${amount} WARD to ${toAddress}`));
-  } catch (error) {
-    console.error(colors.red(`Failed to send WARD to ${toAddress}: ${error.message}`));
-  }
+function deriveAddressFromSeed(seed, derivationPath) {
+  // Placeholder for actual derivation logic
+  return 'derived_address_from_seed';
 }
 
-// Main function
-(async function main() {
-  // Load seed phrases from a file
-  let seedPhrases;
-  try {
-    seedPhrases = JSON.parse(fs.readFileSync('seedPhrases.json', 'utf-8'));
-  } catch (error) {
-    console.error(colors.red(`Error loading seedPhrases.json: ${error.message}`));
-    return;
-  }
+function getPrivateKeyFromSeedPhrase(seedPhrase) {
+  // Derive private key from seed phrase (Placeholder implementation)
+  const seed = bip39.mnemonicToSeedSync(seedPhrase);
+  const privateKey = derivePrivateKeyFromSeed(seed);
+  return privateKey;
+}
 
-  if (!Array.isArray(seedPhrases) || seedPhrases.length === 0) {
-    console.error(colors.red('seedPhrases.json is not set correctly or is empty'));
-    return;
-  }
+function derivePrivateKeyFromSeed(seed) {
+  // Placeholder for actual private key derivation logic
+  return 'private_key_from_seed';
+}
 
-  // Get target address and amount to send
-  const targetAddress = readlineSync.question('Enter the target address to send WARD to: ').trim();
-  const amountToSend = parseFloat(readlineSync.question('Enter the amount of WARD to send in each transaction (default is 0.001 WARD): ').trim()) || 0.001;
+async function createAndSendTx(seedPhrase, recipientAddress, amount, numTx = 50) {
+  const sourceAddress = getAddressFromSeedPhrase(seedPhrase);
 
-  // Get delay between transactions
-  const delayBetweenTx = parseInt(readlineSync.question('Enter the delay between transactions in milliseconds (default is 3000ms): ').trim()) || 3000;
+  for (let i = 0; i < numTx; i++) {
+    try {
+      // Create a raw transaction
+      const tx = await WardenAPI.createTransaction(sourceAddress, recipientAddress, amount);
 
-  if (isNaN(delayBetweenTx) || delayBetweenTx < 0) {
-    console.error(colors.red('Invalid delay specified'));
-    return;
-  }
+      // Sign the transaction
+      const privateKey = getPrivateKeyFromSeedPhrase(seedPhrase);
+      const signedTx = WardenAPI.signTransaction(tx, privateKey);
 
-  // Send 50 transactions
-  for (let i = 0; i < 50; i++) {
-    for (const seedPhrase of seedPhrases) {
-      try {
-        const wallet = await getWalletFromSeedPhrase(seedPhrase);
-        const accounts = await wallet.getAccounts();
-        const { address } = accounts[0];
-        console.log(colors.yellow(`Sending WARD from address: ${address}`));
-        await sendTokens(address, targetAddress, amountToSend);
-        await new Promise(resolve => setTimeout(resolve, delayBetweenTx)); // Delay between transactions
-      } catch (error) {
-        console.error(colors.red(`Error processing seed phrase: ${error.message}`));
+      // Broadcast the transaction
+      const response = await WardenAPI.broadcastTransaction(signedTx);
+      if (response.status === 200) {
+        console.log(`Transaction ${i + 1} broadcasted successfully.`);
+      } else {
+        console.error(`Failed to broadcast transaction ${i + 1}: ${response.data}`);
       }
+    } catch (error) {
+      console.error(`Error in transaction ${i + 1}: ${error.message}`);
     }
   }
-})();
+}
+
+// Example usage
+const seedPhrase = "your seed phrase here";
+const recipientAddress = "recipient address here";
+const amount = 1000; // Example amount in smallest unit
+createAndSendTx(seedPhrase, recipientAddress, amount);
